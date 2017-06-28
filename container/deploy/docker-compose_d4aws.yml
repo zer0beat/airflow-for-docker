@@ -1,0 +1,28 @@
+version: '3.2'
+services:
+    airflow:
+        image: jllacer/airflow:1.8.1
+        ports:
+            - 8180:8080
+        networks:
+            - airflow
+        volumes:
+            - airflow-dags:/opt/airflow/dags
+        secrets:
+            - mysql_pwd
+        environment:
+            MYSQL_USER: username
+            MYSQL_PASSWORD_FILE: /run/secrets/mysql_pwd
+            MYSQL_HOST: host:port
+            MYSQL_DATABASE: databasename
+
+secrets:
+    mysql_pwd:
+        external: true
+
+networks:
+    airflow:
+
+volumes:
+    airflow-dags:
+        driver: cloudstor:aws
