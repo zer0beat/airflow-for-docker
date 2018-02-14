@@ -1,7 +1,7 @@
 version: '3.2'
 services:
     airflow:
-        image: jllacer/airflow:1.8.1
+        image: z0beat/airflow:1.8.1
         ports:
             - 8180:8080
         networks:

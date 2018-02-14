@@ -40,7 +40,7 @@ else
 fi
 unset "EXECUTOR"
 
-BACKEND=${BACKEND:-mysql}
+BACKEND=${BACKEND:-sqlite}
 if [ "$BACKEND" = "mysql" ]; then
     file_env 'MYSQL_USER'
     file_env 'MYSQL_PASSWORD'
@@ -51,6 +51,19 @@ if [ "$BACKEND" = "mysql" ]; then
     fi
 
     AIRFLOW__CORE__SQL_ALCHEMY_CONN=mysql+mysqldb://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}/${MYSQL_DATABASE}
+elif [ "$BACKEND" = "oracle" ]; then
+    file_env 'ORACLE_USER'
+    file_env 'ORACLE_PASSWORD'
+    file_env 'ORACLE_HOST'
+    file_env 'ORACLE_PORT'
+    file_env 'ORACLE_DATABASE'
+    if [ -z "${ORACLE_USER}" -o -z "${ORACLE_PASSWORD}" -o -z "${ORACLE_HOST}" -o -< "${ORACLE_PORT}" -o -z "${ORACLE_DATABASE}" ]; then
+        throw "Incomplete ${BACKEND} configuration. Variables ORACLE_USER, ORACLE_PASSWORD, ORACLE_HOST, ORACLE_DATABASE are needed."
+    fi
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN=oracle+cx_oracle://${ORACLE_USER}:${ORACLE_PASSWORD}@${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_DATABASE}
+elif [ "$BACKEND" = "sqlite" ]; then
+    mkdir -p /data/
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite+pysqlite:///data/file.db
 else
     throw "Backend ${BACKEND} is not supported"
 fi

@@ -1,5 +1,21 @@
 # Apache Airflow for Docker
-## Version 1.8.1
+## Version 1.9.0
+
+## Sample Usage:
+
+From your checkout directory:
+
+1. Build the image
+
+        VERSION=1.9.0
+        FOLDER=1.x.x
+        cd ${FOLDER}
+        docker build --build-arg VERSION=${VERSION} -t airflow:${VERSION} .
+		
+2. Run the image
+
+        VERSION=1.9.0
+        docker run --rm -p 18080:18080 airflow:${VERSION}
 
 ## Useful links
 
