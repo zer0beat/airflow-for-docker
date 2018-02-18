@@ -1,23 +1,20 @@
-# Based on https://github.com/puckel/docker-airflow
-FROM debian:9
+FROM python:3.6-slim-stretch
 
 ARG VERSION
 
 ENV AIRFLOW_HOME        /opt/airflow
 ENV AIRFLOW_VERSION     ${VERSION}
 
-RUN set -x && \
-    apt-get update -yqq && \
-    apt-get install -yqq python-pip python-dev libmariadbclient-dev && \
+RUN buildDeps=" \
+        build-essential \
+    " && \
+    runtimeDeps=" \
+        libmariadbclient-dev \
+    " && \
+    apt-get update && apt-get install -y --no-install-recommends $buildDeps $runtimeDeps && \
     pip install apache-airflow[crypto,mysql,oracle]==$AIRFLOW_VERSION && \
-    apt-get clean && \
-    rm -rf \
-        /var/lib/apt/lists/* \
-        /tmp/* \
-        /var/tmp/* \
-        /usr/share/man \
-        /usr/share/doc \
-        /usr/share/doc-base
+    apt-get purge -y --auto-remove $buildDeps && \
+	rm -rf /var/lib/apt/lists/*
 
 VOLUME ["${AIRFLOW_HOME}/dags"]
 EXPOSE 8080
