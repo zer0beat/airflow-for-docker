@@ -32,8 +32,8 @@ AIRFLOW__CORE__LOAD_EXAMPLES=${LOAD_EXAMPLES:-False}
 AIRFLOW__CORE__AIRFLOW_HOME=${AIRFLOW_HOME}
 AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)")}
 
-EXECUTOR=${EXECUTOR:-LocalExecutor}
-if [ "$EXECUTOR" = "LocalExecutor" ]; then
+EXECUTOR=${EXECUTOR:-SequentialExecutor}
+if [ "$EXECUTOR" = "SequentialExecutor" -o "$EXECUTOR" = "LocalExecutor" ]; then
     AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
 else
     throw "Executor ${EXECUTOR} is not supported"
@@ -63,7 +63,7 @@ elif [ "$BACKEND" = "oracle" ]; then
     AIRFLOW__CORE__SQL_ALCHEMY_CONN=oracle+cx_oracle://${ORACLE_USER}:${ORACLE_PASSWORD}@${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_DATABASE}
 elif [ "$BACKEND" = "sqlite" ]; then
     mkdir -p /data/
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite+pysqlite:///data/file.db
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////data/airflow.db
 else
     throw "Backend ${BACKEND} is not supported"
 fi

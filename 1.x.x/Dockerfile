@@ -9,7 +9,7 @@ ENV AIRFLOW_VERSION     ${VERSION}
 RUN set -x && \
     apt-get update -yqq && \
     apt-get install -yqq python-pip python-dev libmariadbclient-dev && \
-    pip install apache-airflow[crypto,mysql,oracle,sqlite]==$AIRFLOW_VERSION && \
+    pip install apache-airflow[crypto,mysql,oracle]==$AIRFLOW_VERSION && \
     apt-get clean && \
     rm -rf \
         /var/lib/apt/lists/* \
