@@ -1,0 +1,29 @@
+language: bash
+services: docker
+
+branches:
+  only:
+    - master
+
+env:
+  - VERSION=1.9.0 FOLDER=1.x.x LATEST=true
+
+before_script:
+  - env | sort
+  - cd ${FOLDER}
+  - image="${DOCKERHUB_USERNAME}/airflow:${VERSION}"
+  - latest="${DOCKERHUB_USERNAME}/airflow:latest"
+
+script:
+  - docker build --build-arg VERSION=${VERSION} -t "$image" .
+  - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+  - docker push "$image"
+  - |
+    if [ "$LATEST" == "true" ]; then
+      docker tag "$image" "$latest"
+      docker push "$latest" 
+    fi
+
+
+after_script:
+  - docker images

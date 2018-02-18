@@ -70,4 +70,5 @@ fi
 unset "BACKEND"
 
 export_airflow_variables
+airflow initdb
 exec "$@"
