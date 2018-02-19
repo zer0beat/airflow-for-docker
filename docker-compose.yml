@@ -1,0 +1,37 @@
+version: '3.5'
+services:
+    airflow:
+        image: z0beat/airflow:1.9.0
+        depends_on: 
+            - mysql
+        ports:
+            - 8180:8080
+        networks:
+            - airflow
+        volumes:
+            - airflow-dags:/opt/airflow/dags
+        environment:
+            BACKEND: mysql
+            MYSQL_USER: airflow
+            MYSQL_PASSWORD: yey123456
+            MYSQL_DATABASE: airflow
+            MYSQL_HOST: mysql:3306
+    mysql:
+        image: mysql:5.7
+        ports:
+            - 3306:3306
+        networks: 
+            - airflow
+        volumes:
+            - db-data:/var/lib/mysql/data
+        environment:
+            MYSQL_USER: airflow
+            MYSQL_PASSWORD: yey123456
+            MYSQL_DATABASE: airflow
+            MYSQL_ROOT_PASSWORD: iamroot321654
+volumes:
+    airflow-dags:
+    db-data:
+
+networks:
+    airflow:
