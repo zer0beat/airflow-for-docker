@@ -10,9 +10,10 @@ RUN buildDeps=" \
     " && \
     runtimeDeps=" \
         libmariadbclient-dev \
+        netcat \
     " && \
     apt-get update && apt-get install -y --no-install-recommends $buildDeps $runtimeDeps && \
-    pip install apache-airflow[crypto,mysql,oracle]==$AIRFLOW_VERSION && \
+    pip install apache-airflow[crypto,mysql,postgres,oracle]==$AIRFLOW_VERSION && \
     apt-get purge -y --auto-remove $buildDeps && \
 	rm -rf /var/lib/apt/lists/*
 

@@ -52,3 +52,7 @@ local.properties
 # Code Recommenders
 .recommenders/
 /.apt_generated/
+
+mysql-data/
+postgres-data/
+airflow-dags/

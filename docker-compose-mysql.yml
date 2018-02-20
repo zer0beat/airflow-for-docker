@@ -3,26 +3,26 @@ services:
     airflow-scheduler:
         image: z0beat/airflow:1.9.0
         depends_on: 
-            - postgres
+            - mysql
         networks:
             - airflow
         volumes:
             - ${AIRFLOW_DAGS}:/opt/airflow/dags
         environment:
-            BACKEND: postgres
+            BACKEND: mysql
             EXECUTOR: LocalExecutor
-            POSTGRES_USER: airflow
-            POSTGRES_PASSWORD: yey123456
-            POSTGRES_DATABASE: airflow
-            POSTGRES_HOST: postgres
-            POSTGRES_PORT: 5432
+            MYSQL_USER: airflow
+            MYSQL_PASSWORD: yey123456
+            MYSQL_DATABASE: airflow
+            MYSQL_HOST: mysql
+            MYSQL_PORT: 3306
             INITDB: "True"
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow scheduler
     airflow-webserver:
         image: z0beat/airflow:1.9.0
         depends_on: 
-            - postgres
+            - mysql
         ports:
             - 8180:8080
         networks:
@@ -30,13 +30,13 @@ services:
         volumes:
             - ${AIRFLOW_DAGS}:/opt/airflow/dags
         environment:
-            BACKEND: postgres
+            BACKEND: mysql
             EXECUTOR: LocalExecutor
-            POSTGRES_USER: airflow
-            POSTGRES_PASSWORD: yey123456
-            POSTGRES_DATABASE: airflow
-            POSTGRES_HOST: postgres
-            POSTGRES_PORT: 5432
+            MYSQL_USER: airflow
+            MYSQL_PASSWORD: yey123456
+            MYSQL_DATABASE: airflow
+            MYSQL_HOST: mysql
+            MYSQL_PORT: 3306
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow webserver
         healthcheck:
@@ -44,18 +44,19 @@ services:
             interval: 30s
             timeout: 30s
             retries: 3
-    postgres:
-        image: postgres:10.2
+    mysql:
+        image: mysql:5.7
         ports:
-            - 5432:5432
+            - 3306:3306
         networks: 
             - airflow
         volumes:
-            - ${POSTGRES_DATA}:/var/lib/postgresql/data
+            - ${MYSQL_DATA}:/var/lib/mysql
         environment:
-            POSTGRES_USER: airflow
-            POSTGRES_PASSWORD: yey123456
-            POSTGRES_DB: airflow
+            MYSQL_USER: airflow
+            MYSQL_PASSWORD: yey123456
+            MYSQL_DATABASE: airflow
+            MYSQL_ROOT_PASSWORD: iamroot321654
 
 networks:
     airflow:
