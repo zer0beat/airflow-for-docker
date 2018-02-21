@@ -49,14 +49,6 @@ AIRFLOW__CORE__LOAD_EXAMPLES=${LOAD_EXAMPLES:-False}
 AIRFLOW__CORE__AIRFLOW_HOME=${AIRFLOW_HOME}
 AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)")}
 
-EXECUTOR=${EXECUTOR:-SequentialExecutor}
-if [ "$EXECUTOR" = "SequentialExecutor" -o "$EXECUTOR" = "LocalExecutor" ]; then
-    AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
-else
-    throw "Executor ${EXECUTOR} is not supported"
-fi
-unset "EXECUTOR"
-
 BACKEND=${BACKEND:-sqlite}
 if [ "$BACKEND" = "mysql" ]; then
     file_env 'MYSQL_USER'
@@ -100,7 +92,45 @@ elif [ "$BACKEND" = "sqlite" ]; then
 else
     throw "Backend ${BACKEND} is not supported"
 fi
+
+EXECUTOR=${EXECUTOR:-SequentialExecutor}
+if [ "$EXECUTOR" = "SequentialExecutor" -o "$EXECUTOR" = "LocalExecutor" ]; then
+    AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
+elif [ "$EXECUTOR" = "CeleryExecutor" ]; then
+    AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
+
+    BROKER=${BROKER:-rabbitmq}
+    if [ "$BROKER" = "rabbitmq" ]; then
+        file_env 'RABBITMQ_USER'
+        file_env 'RABBITMQ_PASSWORD'
+        file_env 'RABBITMQ_HOST'
+        file_env 'RABBITMQ_PORT'
+        AIRFLOW__CELERY__BROKER_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}/airflow
+        wait_for_port "RabbitMQ" "${RABBITMQ_HOST}" "${RABBITMQ_PORT}"
+    elif [ "$BROKER" = "redis" ]; then
+        file_env 'REDIS_PASSWORD'
+        file_env 'REDIS_HOST'
+        file_env 'REDIS_PORT'
+        AIRFLOW__CELERY__BROKER_URL=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/0
+        wait_for_port "Redis" "${REDIS_HOST}" "${REDIS_PORT}"
+    fi
+
+    # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-result-backends
+    # http://docs.celeryproject.org/en/latest/userguide/configuration.html#conf-result-backend
+    if [ "$BACKEND" = "mysql" ]; then
+        AIRFLOW__CELERY__CELERY_RESULT_BACKEND=db+mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}/${MYSQL_DATABASE}
+    elif [ "$BACKEND" = "oracle" ]; then
+        AIRFLOW__CELERY__CELERY_RESULT_BACKEND=db+oracle://${ORACLE_USER}:${ORACLE_PASSWORD}@${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_DATABASE}
+    elif [ "$BACKEND" = "postgres" ]; then
+        AIRFLOW__CELERY__CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}
+    else
+        throw "Celery result backend ${BACKEND} is not supported"
+    fi
+else
+    throw "Executor ${EXECUTOR} is not supported"
+fi
 unset "BACKEND"
+unset "EXECUTOR"
 
 export_airflow_variables
 

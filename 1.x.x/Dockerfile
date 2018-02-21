@@ -13,12 +13,12 @@ RUN buildDeps=" \
         netcat \
     " && \
     apt-get update && apt-get install -y --no-install-recommends $buildDeps $runtimeDeps && \
-    pip install apache-airflow[crypto,mysql,postgres,oracle]==$AIRFLOW_VERSION && \
+    pip install apache-airflow[crypto,mysql,postgres,oracle,celery]==$AIRFLOW_VERSION && \
     apt-get purge -y --auto-remove $buildDeps && \
 	rm -rf /var/lib/apt/lists/*
 
 VOLUME ["${AIRFLOW_HOME}/dags"]
-EXPOSE 8080
+EXPOSE 8080 8793 5555
 WORKDIR ${AIRFLOW_HOME}
 
 ADD script/entrypoint.sh /entrypoint.sh
