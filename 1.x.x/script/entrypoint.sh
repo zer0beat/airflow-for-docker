@@ -37,7 +37,7 @@ wait_for_port() {
     if [ "$j" -ge 12 ]; then
       throw "$(date) - ${host}:${port} still not reachable, giving up"
     fi
-    echo "$(date) - waiting for ${name}... ${j}/${TRY_LOOP}"
+    echo "$(date) - waiting for ${name} (${host}:${port})... ${j}/${TRY_LOOP}"
     sleep 5
   done
 }

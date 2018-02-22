@@ -64,7 +64,17 @@ services:
         volumes:
             - ${AIRFLOW_DAGS}:/opt/airflow/dags
         environment:
+            BACKEND: mysql
             EXECUTOR: CeleryExecutor
+            MYSQL_USER: airflow
+            MYSQL_PASSWORD: yey123456
+            MYSQL_DATABASE: airflow
+            MYSQL_HOST: mysql
+            MYSQL_PORT: 3306
+            RABBITMQ_USER: airflow
+            RABBITMQ_PASSWORD: yey123456
+            RABBITMQ_HOST: rabbitmq
+            RABBITMQ_PORT: 5672
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow worker
     airflow-flower:
@@ -77,7 +87,17 @@ services:
         networks:
             - airflow
         environment:
+            BACKEND: mysql
             EXECUTOR: CeleryExecutor
+            MYSQL_USER: airflow
+            MYSQL_PASSWORD: yey123456
+            MYSQL_DATABASE: airflow
+            MYSQL_HOST: mysql
+            MYSQL_PORT: 3306
+            RABBITMQ_USER: airflow
+            RABBITMQ_PASSWORD: yey123456
+            RABBITMQ_HOST: rabbitmq
+            RABBITMQ_PORT: 5672
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow flower
     mysql:
@@ -95,8 +115,11 @@ services:
             MYSQL_ROOT_PASSWORD: iamroot321654
     rabbitmq:
         image: rabbitmq:3.7.3
+        networks:
+            - airflow
         environment:
             RABBITMQ_DEFAULT_USER: airflow
             RABBITMQ_DEFAULT_PASS: yey123456
+            RABBITMQ_DEFAULT_VHOST: airflow
 networks:
     airflow:
