@@ -62,17 +62,6 @@ if [ "$BACKEND" = "mysql" ]; then
 
     AIRFLOW__CORE__SQL_ALCHEMY_CONN=mysql+mysqldb://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}/${MYSQL_DATABASE}
     wait_for_port "MySQL" "${MYSQL_HOST}" "${MYSQL_PORT}"
-elif [ "$BACKEND" = "oracle" ]; then
-    file_env 'ORACLE_USER'
-    file_env 'ORACLE_PASSWORD'
-    file_env 'ORACLE_HOST'
-    file_env 'ORACLE_PORT'
-    file_env 'ORACLE_DATABASE'
-    if [ -z "${ORACLE_USER}" -o -z "${ORACLE_PASSWORD}" -o -z "${ORACLE_HOST}" -o -z "${ORACLE_PORT}" -o -z "${ORACLE_DATABASE}" ]; then
-        throw "Incomplete ${BACKEND} configuration. Variables ORACLE_USER, ORACLE_PASSWORD, ORACLE_HOST, ORACLE_DATABASE are needed."
-    fi
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN=oracle+cx_oracle://${ORACLE_USER}:${ORACLE_PASSWORD}@${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_DATABASE}
-    wait_for_port "Oracle" "${ORACLE_HOST}" "${ORACLE_PORT}"
 elif [ "$BACKEND" = "postgres" ]; then
     file_env 'POSTGRES_USER'
     file_env 'POSTGRES_PASSWORD'
@@ -118,8 +107,6 @@ elif [ "$EXECUTOR" = "CeleryExecutor" ]; then
     # http://docs.celeryproject.org/en/latest/userguide/configuration.html#conf-result-backend
     if [ "$BACKEND" = "mysql" ]; then
         AIRFLOW__CELERY__CELERY_RESULT_BACKEND=db+mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}/${MYSQL_DATABASE}
-    elif [ "$BACKEND" = "oracle" ]; then
-        AIRFLOW__CELERY__CELERY_RESULT_BACKEND=db+oracle://${ORACLE_USER}:${ORACLE_PASSWORD}@${ORACLE_HOST}:${ORACLE_PORT}/${ORACLE_DATABASE}
     elif [ "$BACKEND" = "postgres" ]; then
         AIRFLOW__CELERY__CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}
     else
