@@ -85,8 +85,7 @@ elif [ "$BACKEND" = "postgres" ]; then
     AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}
     wait_for_port "Postgres" "${POSTGRES_HOST}" "${POSTGRES_PORT}"
 elif [ "$BACKEND" = "sqlite" ]; then
-    mkdir -p /data/
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////data/airflow.db
+    AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////${AIRFLOW_HOME}/airflow.db
     INITDB=True
     RUN_AIRFLOW_SCHEDULER=True
 else
@@ -111,7 +110,7 @@ elif [ "$EXECUTOR" = "CeleryExecutor" ]; then
         file_env 'REDIS_PASSWORD'
         file_env 'REDIS_HOST'
         file_env 'REDIS_PORT'
-        AIRFLOW__CELERY__BROKER_URL=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/0
+        AIRFLOW__CELERY__BROKER_URL=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/1
         wait_for_port "Redis" "${REDIS_HOST}" "${REDIS_PORT}"
     fi
 
