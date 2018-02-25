@@ -12,14 +12,14 @@ services:
         environment:
             EXECUTOR: CeleryExecutor
             BACKEND: mysql
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             BROKER: redis
-            REDIS_HOST: redis
-            REDIS_PORT: 6379
+            CELERY_BROKER_HOST: redis
+            CELERY_BROKER_PORT: 6379
             INITDB: "True"
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow scheduler
@@ -37,14 +37,14 @@ services:
         environment:
             EXECUTOR: CeleryExecutor
             BACKEND: mysql
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             BROKER: redis
-            REDIS_HOST: redis
-            REDIS_PORT: 6379
+            CELERY_BROKER_HOST: redis
+            CELERY_BROKER_PORT: 6379
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow webserver
         healthcheck:
@@ -64,14 +64,14 @@ services:
         environment:
             EXECUTOR: CeleryExecutor
             BACKEND: mysql
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             BROKER: redis
-            REDIS_HOST: redis
-            REDIS_PORT: 6379
+            CELERY_BROKER_HOST: redis
+            CELERY_BROKER_PORT: 6379
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow worker
     airflow-flower:
@@ -86,14 +86,14 @@ services:
         environment:
             EXECUTOR: CeleryExecutor
             BACKEND: mysql
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             BROKER: redis
-            REDIS_HOST: redis
-            REDIS_PORT: 6379
+            CELERY_BROKER_HOST: redis
+            CELERY_BROKER_PORT: 6379
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow flower
     mysql:

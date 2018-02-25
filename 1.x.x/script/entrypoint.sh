@@ -1,17 +1,21 @@
 #!/bin/bash
 
-function throw() {
+if [ "$DEBUG" = "True" ]; then
+    set -x
+fi
+
+function throw {
     echo $1
     exit 1
 }
 
-function export_airflow_variables() {
+function export_airflow_variables {
     for var in $(set | grep AIRFLOW__ | grep -v REMOVE_THIS_FROM_RESULT); do
         export ${var}
     done
 }
 
-function file_env() {
+function file_env {
 	local var="$1"
 	local fileVar="${var}_FILE"
 	local def="${2:-}"
@@ -29,7 +33,7 @@ function file_env() {
 }
 
 # Credits to https://github.com/puckel/docker-airflow/blob/master/script/entrypoint.sh#L45-L57
-wait_for_port() {
+function wait_for_port {
   local name="${1}" host="${2}" port="${3}"
   local j=0
   while ! nc -z "${host}" "${port}" >/dev/null 2>&1 < /dev/null; do
@@ -42,81 +46,124 @@ wait_for_port() {
   done
 }
 
-RUN_AIRFLOW_SCHEDULER=False
+function get_backend {
+    local selected_backend=${BACKEND:-sqlite}
+    for supported_backend in $SUPPORTED_BACKENDS; do
+        if [ "$selected_backend" = "$supported_backend" ]; then
+            check_backend_configuration $selected_backend
+            echo $selected_backend
+            return
+        fi
+    done
+    throw "Backend ${selected_backend} is not supported"
+}
+
+function get_executor {
+    local selected_executor=${EXECUTOR:-SequentialExecutor}
+    for supported_executor in $SUPPORTED_EXECUTORS; do
+        if [ "$selected_executor" = "$supported_executor" ]; then
+            echo $selected_executor
+            return
+        fi
+    done
+    throw "Executor ${selected_executor} is not supported"
+}
+
+function get_celery_broker {
+    local selected_broker=${BROKER:-rabbitmq}
+    for supported_broker in $SUPPORTED_CELERY_BROKERS; do
+        if [ "$selected_broker" = "$supported_broker" ]; then
+            check_celery_broker_configuration $selected_broker
+            echo $selected_broker
+            return
+        fi
+    done
+    throw "Celery broker ${selected_broker} is not supported"
+}
+
+function check_backend_configuration {
+    local backend=$1
+    if [ $backend != "sqlite" ]; then
+        file_env 'BACKEND_USER'
+        file_env 'BACKEND_PASSWORD'
+        file_env 'BACKEND_HOST'
+        file_env 'BACKEND_PORT'
+        file_env 'BACKEND_DATABASE'
+        if [ -z "${BACKEND_USER}" -o -z "${BACKEND_PASSWORD}" -o -z "${BACKEND_HOST}" -o -z "${BACKEND_PORT}" -o -z "${BACKEND_DATABASE}" ]; then
+            throw "Incomplete ${backend} configuration. Variables BACKEND_USER, BACKEND_PASSWORD, BACKEND_HOST, BACKEND_PORT, BACKEND_DATABASE are needed."
+        fi
+    fi
+}
+
+function check_celery_broker_configuration {
+    local broker=$1
+    file_env 'CELERY_BROKER_USER'
+    file_env 'CELERY_BROKER_PASSWORD'
+    file_env 'CELERY_BROKER_HOST'
+    file_env 'CELERY_BROKER_PORT'
+    if [ "$broker" = "rabbitmq" ]; then
+        if [ -z "${CELERY_BROKER_USER}" -o -z "${CELERY_BROKER_PASSWORD}" -o -z "${CELERY_BROKER_HOST}" -o -z "${CELERY_BROKER_PORT}" ]; then
+            throw "Incomplete ${broker} configuration. Variables CELERY_BROKER_USER, CELERY_BROKER_PASSWORD, CELERY_BROKER_HOST, CELERY_BROKER_PORT are needed."
+        fi
+    elif [ "$broker" = "redis" ]; then
+        if [ -z "${CELERY_BROKER_HOST}" -o -z "${CELERY_BROKER_PORT}" ]; then
+            throw "Incomplete ${broker} configuration. Variables CELERY_BROKER_HOST, CELERY_BROKER_PORT are needed."
+        fi
+    fi
+}
+
+function get_sql_alchemy_conn {
+    if [ "$BACKEND" = "mysql" ]; then
+        echo mysql+mysqldb://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}/${BACKEND_DATABASE}
+    elif [ "$BACKEND" = "postgres" ]; then
+        echo postgresql+psycopg2://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}:${BACKEND_PORT}/${BACKEND_DATABASE}
+    elif [ "$BACKEND" = "sqlite" ]; then
+        echo sqlite:////${AIRFLOW_HOME}/airflow.db
+    fi
+}
+
+function get_celery_broker_url {
+    if [ "$CELERY_BROKER" = "rabbitmq" ]; then
+        echo amqp://${CELERY_BROKER_USER}:${CELERY_BROKER_PASSWORD}@${CELERY_BROKER_HOST}:${CELERY_BROKER_PORT}/airflow
+    elif [ "$CELERY_BROKER" = "redis" ]; then
+        echo redis://:${CELERY_BROKER_PASSWORD}@${CELERY_BROKER_HOST}:${CELERY_BROKER_PORT}/1
+    fi
+}
+
+function get_celery_result_backend {
+    if [ "$BACKEND" = "mysql" ]; then
+        echo db+mysql://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}/${BACKEND_DATABASE}
+    elif [ "$BACKEND" = "postgres" ]; then
+        echo db+postgresql://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}:${BACKEND_PORT}/${BACKEND_DATABASE}
+    fi
+}
+
 INITDB=${INITDB:-False}
+RUN_AIRFLOW_SCHEDULER=False
+SUPPORTED_BACKENDS="sqlite mysql postgres"
+SUPPORTED_EXECUTORS="SequentialExecutor LocalExecutor CeleryExecutor"
+SUPPORTED_CELERY_BROKERS="redis rabbitmq"
+BACKEND=$(get_backend)
 
 AIRFLOW__CORE__LOAD_EXAMPLES=${LOAD_EXAMPLES:-False}
 AIRFLOW__CORE__AIRFLOW_HOME=${AIRFLOW_HOME}
 AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)")}
+AIRFLOW__CORE__SQL_ALCHEMY_CONN=$(get_sql_alchemy_conn)
+AIRFLOW__CORE__EXECUTOR=$(get_executor)
 
-BACKEND=${BACKEND:-sqlite}
-if [ "$BACKEND" = "mysql" ]; then
-    file_env 'MYSQL_USER'
-    file_env 'MYSQL_PASSWORD'
-    file_env 'MYSQL_HOST'
-    file_env 'MYSQL_PORT'
-    file_env 'MYSQL_DATABASE'
-    if [ -z "${MYSQL_USER}" -o -z "${MYSQL_PASSWORD}" -o -z "${MYSQL_HOST}" -o -z "${MYSQL_PORT}" -o -z "${MYSQL_DATABASE}" ]; then
-        throw "Incomplete ${BACKEND} configuration. Variables MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE are needed."
-    fi
-
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN=mysql+mysqldb://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}/${MYSQL_DATABASE}
-    wait_for_port "MySQL" "${MYSQL_HOST}" "${MYSQL_PORT}"
-elif [ "$BACKEND" = "postgres" ]; then
-    file_env 'POSTGRES_USER'
-    file_env 'POSTGRES_PASSWORD'
-    file_env 'POSTGRES_HOST'
-    file_env 'POSTGRES_PORT'
-    file_env 'POSTGRES_DATABASE'
-    if [ -z "${POSTGRES_USER}" -o -z "${POSTGRES_PASSWORD}" -o -z "${POSTGRES_HOST}" -o -z "${POSTGRES_PORT}" -o -z "${POSTGRES_DATABASE}" ]; then
-        throw "Incomplete ${BACKEND} configuration. Variables POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_HOST, POSTGRES_DATABASE are needed."
-    fi
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}
-    wait_for_port "Postgres" "${POSTGRES_HOST}" "${POSTGRES_PORT}"
-elif [ "$BACKEND" = "sqlite" ]; then
-    AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////${AIRFLOW_HOME}/airflow.db
+if [ "$BACKEND" != "sqlite" ]; then
+    wait_for_port "${BACKEND}" "${BACKEND_HOST}" "${BACKEND_PORT}"
+else
     INITDB=True
     RUN_AIRFLOW_SCHEDULER=True
-else
-    throw "Backend ${BACKEND} is not supported"
 fi
 
-EXECUTOR=${EXECUTOR:-SequentialExecutor}
-if [ "$EXECUTOR" = "SequentialExecutor" -o "$EXECUTOR" = "LocalExecutor" ]; then
-    AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
-elif [ "$EXECUTOR" = "CeleryExecutor" ]; then
-    AIRFLOW__CORE__EXECUTOR=${EXECUTOR}
-
-    BROKER=${BROKER:-rabbitmq}
-    if [ "$BROKER" = "rabbitmq" ]; then
-        file_env 'RABBITMQ_USER'
-        file_env 'RABBITMQ_PASSWORD'
-        file_env 'RABBITMQ_HOST'
-        file_env 'RABBITMQ_PORT'
-        AIRFLOW__CELERY__BROKER_URL=amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@${RABBITMQ_HOST}:${RABBITMQ_PORT}/airflow
-        wait_for_port "RabbitMQ" "${RABBITMQ_HOST}" "${RABBITMQ_PORT}"
-    elif [ "$BROKER" = "redis" ]; then
-        file_env 'REDIS_PASSWORD'
-        file_env 'REDIS_HOST'
-        file_env 'REDIS_PORT'
-        AIRFLOW__CELERY__BROKER_URL=redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/1
-        wait_for_port "Redis" "${REDIS_HOST}" "${REDIS_PORT}"
-    fi
-
-    # http://docs.celeryproject.org/en/latest/userguide/tasks.html#task-result-backends
-    # http://docs.celeryproject.org/en/latest/userguide/configuration.html#conf-result-backend
-    if [ "$BACKEND" = "mysql" ]; then
-        AIRFLOW__CELERY__CELERY_RESULT_BACKEND=db+mysql://${MYSQL_USER}:${MYSQL_PASSWORD}@${MYSQL_HOST}/${MYSQL_DATABASE}
-    elif [ "$BACKEND" = "postgres" ]; then
-        AIRFLOW__CELERY__CELERY_RESULT_BACKEND=db+postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@${POSTGRES_HOST}:${POSTGRES_PORT}/${POSTGRES_DATABASE}
-    else
-        throw "Celery result backend ${BACKEND} is not supported"
-    fi
-else
-    throw "Executor ${EXECUTOR} is not supported"
+if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
+    CELERY_BROKER=$(get_celery_broker)
+    AIRFLOW__CELERY__BROKER_URL=$(get_celery_broker_url)
+    AIRFLOW__CELERY__CELERY_RESULT_BACKEND=$(get_celery_result_backend)
+    wait_for_port "${CELERY_BROKER}" "${CELERY_BROKER_HOST}" "${CELERY_BROKER_PORT}"
 fi
-unset "BACKEND"
-unset "EXECUTOR"
 
 export_airflow_variables
 
@@ -129,8 +176,5 @@ fi
 if [ "$RUN_AIRFLOW_SCHEDULER" = "True" ]; then
     airflow scheduler &
 fi
-
-unset "INITDB"
-unset "RUN_AIRFLOW_SCHEDULER"
 
 exec "$@"

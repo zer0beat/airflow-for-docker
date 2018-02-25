@@ -11,11 +11,11 @@ services:
         environment:
             BACKEND: mysql
             EXECUTOR: LocalExecutor
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             INITDB: "True"
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow scheduler
@@ -32,11 +32,11 @@ services:
         environment:
             BACKEND: mysql
             EXECUTOR: LocalExecutor
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow webserver
         healthcheck:

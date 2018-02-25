@@ -12,16 +12,16 @@ services:
         environment:
             EXECUTOR: CeleryExecutor
             BACKEND: mysql
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             BROKER: rabbitmq
-            RABBITMQ_USER: airflow
-            RABBITMQ_PASSWORD: yey123456
-            RABBITMQ_HOST: rabbitmq
-            RABBITMQ_PORT: 5672
+            CELERY_BROKER_USER: airflow
+            CELERY_BROKER_PASSWORD: yey123456
+            CELERY_BROKER_HOST: rabbitmq
+            CELERY_BROKER_PORT: 5672
             INITDB: "True"
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow scheduler
@@ -39,16 +39,16 @@ services:
         environment:
             EXECUTOR: CeleryExecutor
             BACKEND: mysql
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             BROKER: rabbitmq
-            RABBITMQ_USER: airflow
-            RABBITMQ_PASSWORD: yey123456
-            RABBITMQ_HOST: rabbitmq
-            RABBITMQ_PORT: 5672
+            CELERY_BROKER_USER: airflow
+            CELERY_BROKER_PASSWORD: yey123456
+            CELERY_BROKER_HOST: rabbitmq
+            CELERY_BROKER_PORT: 5672
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow webserver
         healthcheck:
@@ -68,16 +68,16 @@ services:
         environment:
             EXECUTOR: CeleryExecutor
             BACKEND: mysql
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             BROKER: rabbitmq
-            RABBITMQ_USER: airflow
-            RABBITMQ_PASSWORD: yey123456
-            RABBITMQ_HOST: rabbitmq
-            RABBITMQ_PORT: 5672
+            CELERY_BROKER_USER: airflow
+            CELERY_BROKER_PASSWORD: yey123456
+            CELERY_BROKER_HOST: rabbitmq
+            CELERY_BROKER_PORT: 5672
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow worker
     airflow-flower:
@@ -92,16 +92,16 @@ services:
         environment:
             EXECUTOR: CeleryExecutor
             BACKEND: mysql
-            MYSQL_USER: airflow
-            MYSQL_PASSWORD: yey123456
-            MYSQL_DATABASE: airflow
-            MYSQL_HOST: mysql
-            MYSQL_PORT: 3306
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
             BROKER: rabbitmq
-            RABBITMQ_USER: airflow
-            RABBITMQ_PASSWORD: yey123456
-            RABBITMQ_HOST: rabbitmq
-            RABBITMQ_PORT: 5672
+            CELERY_BROKER_USER: airflow
+            CELERY_BROKER_PASSWORD: yey123456
+            CELERY_BROKER_HOST: rabbitmq
+            CELERY_BROKER_PORT: 5672
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow flower
     mysql:

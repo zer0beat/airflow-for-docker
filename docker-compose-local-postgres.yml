@@ -11,11 +11,11 @@ services:
         environment:
             BACKEND: postgres
             EXECUTOR: LocalExecutor
-            POSTGRES_USER: airflow
-            POSTGRES_PASSWORD: yey123456
-            POSTGRES_DATABASE: airflow
-            POSTGRES_HOST: postgres
-            POSTGRES_PORT: 5432
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: postgres
+            BACKEND_PORT: 5432
             INITDB: "True"
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow scheduler
@@ -32,11 +32,11 @@ services:
         environment:
             BACKEND: postgres
             EXECUTOR: LocalExecutor
-            POSTGRES_USER: airflow
-            POSTGRES_PASSWORD: yey123456
-            POSTGRES_DATABASE: airflow
-            POSTGRES_HOST: postgres
-            POSTGRES_PORT: 5432
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: postgres
+            BACKEND_PORT: 5432
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: airflow webserver
         healthcheck:
