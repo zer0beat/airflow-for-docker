@@ -56,7 +56,7 @@ function get_sql_alchemy_conn {
 }
 
 function is_a_supported_backend {
-    local selected_backend=${1:-sqlite}
+    local selected_backend=${1}
     local supported_backends="sqlite mysql postgres"
     for supported_backend in $supported_backends; do
         if [ "$selected_backend" = "$supported_backend" ]; then
@@ -76,7 +76,7 @@ function get_sql_alchemy_conn_mysql {
     if [ -z "${BACKEND_USER}" -o -z "${BACKEND_PASSWORD}" -o -z "${BACKEND_HOST}" -o -z "${BACKEND_PORT}" -o -z "${BACKEND_DATABASE}" ]; then
         throw "Incomplete MySQL configuration. Variables BACKEND_USER, BACKEND_PASSWORD, BACKEND_HOST, BACKEND_PORT, BACKEND_DATABASE are needed."
     fi
-    wait_for_port "${backend}" "${BACKEND_HOST}" "${BACKEND_PORT}"
+    wait_for_port "MySQL" "${BACKEND_HOST}" "${BACKEND_PORT}"
     eval $__resultvar="'mysql+mysqldb://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}/${BACKEND_DATABASE}'"
 }
 
@@ -90,7 +90,7 @@ function get_sql_alchemy_conn_postgres {
     if [ -z "${BACKEND_USER}" -o -z "${BACKEND_PASSWORD}" -o -z "${BACKEND_HOST}" -o -z "${BACKEND_PORT}" -o -z "${BACKEND_DATABASE}" ]; then
         throw "Incomplete Postgres configuration. Variables BACKEND_USER, BACKEND_PASSWORD, BACKEND_HOST, BACKEND_PORT, BACKEND_DATABASE are needed."
     fi
-    wait_for_port "${backend}" "${BACKEND_HOST}" "${BACKEND_PORT}"
+    wait_for_port "Postgres" "${BACKEND_HOST}" "${BACKEND_PORT}"
     eval $__resultvar="'postgresql+psycopg2://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}:${BACKEND_PORT}/${BACKEND_DATABASE}'"
 }
 
@@ -116,41 +116,50 @@ function get_executor {
 }
 
 #### Celery
-function get_celery_broker {
-    local selected_broker=${BROKER:-rabbitmq}
-    for supported_broker in $SUPPORTED_CELERY_BROKERS; do
-        if [ "$selected_broker" = "$supported_broker" ]; then
-            check_celery_broker_configuration $selected_broker
-            echo $selected_broker
-            return
+function get_celery_broker_url {
+    local __resultvar=$1
+    local selected_celery_broker=${2:-rabbitmq}
+    if is_a_supported_celery_broker "$selected_celery_broker"; then
+        get_celery_broker_url_$selected_celery_broker "celery_broker_url"
+        eval $__resultvar="'$celery_broker_url'"
+        return
+    fi
+    throw "Celery broker ${selected_celery_broker} is not supported"
+
+function is_a_supported_celery_broker {
+    local selected_celery_broker=${1}
+    local supported_celery_brokers="redis rabbitmq"
+    for supported_celery_broker in $supported_celery_brokers; do
+        if [ "$selected_celery_broker" = "$supported_celery_broker" ]; then
+            return 0
         fi
     done
-    throw "Celery broker ${selected_broker} is not supported"
+    return 1
 }
 
-function check_celery_broker_configuration {
-    local broker=$1
+function get_celery_broker_url_redis {
+    local __resultvar=$1
+    file_env 'CELERY_BROKER_PASSWORD'
+    file_env 'CELERY_BROKER_HOST'
+    file_env 'CELERY_BROKER_PORT'
+    if [ -z "${CELERY_BROKER_HOST}" -o -z "${CELERY_BROKER_PORT}" ]; then
+        throw "Incomplete Redis configuration. Variables CELERY_BROKER_HOST, CELERY_BROKER_PORT are needed."
+    fi
+    wait_for_port "Redis" "${CELERY_BROKER_HOST}" "${CELERY_BROKER_PORT}"
+    eval $__resultvar="'redis://:${CELERY_BROKER_PASSWORD}@${CELERY_BROKER_HOST}:${CELERY_BROKER_PORT}/1'"
+}
+
+function get_celery_broker_url_rabbitmq {
+    local __resultvar=$1
     file_env 'CELERY_BROKER_USER'
     file_env 'CELERY_BROKER_PASSWORD'
     file_env 'CELERY_BROKER_HOST'
     file_env 'CELERY_BROKER_PORT'
-    if [ "$broker" = "rabbitmq" ]; then
-        if [ -z "${CELERY_BROKER_USER}" -o -z "${CELERY_BROKER_PASSWORD}" -o -z "${CELERY_BROKER_HOST}" -o -z "${CELERY_BROKER_PORT}" ]; then
-            throw "Incomplete ${broker} configuration. Variables CELERY_BROKER_USER, CELERY_BROKER_PASSWORD, CELERY_BROKER_HOST, CELERY_BROKER_PORT are needed."
-        fi
-    elif [ "$broker" = "redis" ]; then
-        if [ -z "${CELERY_BROKER_HOST}" -o -z "${CELERY_BROKER_PORT}" ]; then
-            throw "Incomplete ${broker} configuration. Variables CELERY_BROKER_HOST, CELERY_BROKER_PORT are needed."
-        fi
+    if [ -z "${CELERY_BROKER_USER}" -o -z "${CELERY_BROKER_PASSWORD}" -o -z "${CELERY_BROKER_HOST}" -o -z "${CELERY_BROKER_PORT}" ]; then
+        throw "Incomplete RabbitMQ configuration. Variables CELERY_BROKER_USER, CELERY_BROKER_PASSWORD, CELERY_BROKER_HOST, CELERY_BROKER_PORT are needed."
     fi
-}
-
-function get_celery_broker_url {
-    if [ "$CELERY_BROKER" = "rabbitmq" ]; then
-        echo amqp://${CELERY_BROKER_USER}:${CELERY_BROKER_PASSWORD}@${CELERY_BROKER_HOST}:${CELERY_BROKER_PORT}/airflow
-    elif [ "$CELERY_BROKER" = "redis" ]; then
-        echo redis://:${CELERY_BROKER_PASSWORD}@${CELERY_BROKER_HOST}:${CELERY_BROKER_PORT}/1
-    fi
+    wait_for_port "Redis" "${CELERY_BROKER_HOST}" "${CELERY_BROKER_PORT}"
+    eval $__resultvar="'amqp://${CELERY_BROKER_USER}:${CELERY_BROKER_PASSWORD}@${CELERY_BROKER_HOST}:${CELERY_BROKER_PORT}/airflow'"
 }
 
 function get_celery_result_backend {
@@ -166,8 +175,6 @@ if [ "$DEBUG" = "True" ]; then
     set -x
 fi
 
-SUPPORTED_CELERY_BROKERS="redis rabbitmq"
-
 AIRFLOW__CORE__LOAD_EXAMPLES=${LOAD_EXAMPLES:-False}
 AIRFLOW__CORE__AIRFLOW_HOME=${AIRFLOW_HOME}
 AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)")}
@@ -175,8 +182,7 @@ get_sql_alchemy_conn "AIRFLOW__CORE__SQL_ALCHEMY_CONN" "$BACKEND"
 get_executor "AIRFLOW__CORE__EXECUTOR" "$EXECUTOR"
 
 if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
-    CELERY_BROKER=$(get_celery_broker)
-    AIRFLOW__CELERY__BROKER_URL=$(get_celery_broker_url)
+    get_celery_broker_url "AIRFLOW__CELERY__BROKER_URL" "$BROKER"
     AIRFLOW__CELERY__CELERY_RESULT_BACKEND=$(get_celery_result_backend)
     wait_for_port "${CELERY_BROKER}" "${CELERY_BROKER_HOST}" "${CELERY_BROKER_PORT}"
 fi
