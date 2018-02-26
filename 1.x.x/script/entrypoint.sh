@@ -103,10 +103,12 @@ function get_sql_alchemy_conn_sqlite {
 
 #### Executor
 function get_executor {
-    local selected_executor=${EXECUTOR:-SequentialExecutor}
+    local __resultvar=$1
+    local selected_executor=${2:-SequentialExecutor}
+    local supported_executors="SequentialExecutor LocalExecutor CeleryExecutor"
     for supported_executor in $SUPPORTED_EXECUTORS; do
         if [ "$selected_executor" = "$supported_executor" ]; then
-            echo $selected_executor
+            eval $__resultvar="'$selected_executor'"
             return
         fi
     done
@@ -164,14 +166,13 @@ if [ "$DEBUG" = "True" ]; then
     set -x
 fi
 
-SUPPORTED_EXECUTORS="SequentialExecutor LocalExecutor CeleryExecutor"
 SUPPORTED_CELERY_BROKERS="redis rabbitmq"
 
 AIRFLOW__CORE__LOAD_EXAMPLES=${LOAD_EXAMPLES:-False}
 AIRFLOW__CORE__AIRFLOW_HOME=${AIRFLOW_HOME}
 AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)")}
 get_sql_alchemy_conn "AIRFLOW__CORE__SQL_ALCHEMY_CONN" "$BACKEND"
-AIRFLOW__CORE__EXECUTOR=$(get_executor)
+get_executor "AIRFLOW__CORE__EXECUTOR" "$EXECUTOR"
 
 if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
     CELERY_BROKER=$(get_celery_broker)
