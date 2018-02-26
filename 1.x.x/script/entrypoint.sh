@@ -1,9 +1,6 @@
 #!/bin/bash
 
-if [ "$DEBUG" = "True" ]; then
-    set -x
-fi
-
+#### Utils
 function throw {
     echo $1
     exit 1
@@ -46,18 +43,65 @@ function wait_for_port {
   done
 }
 
-function get_backend {
-    local selected_backend=${BACKEND:-sqlite}
-    for supported_backend in $SUPPORTED_BACKENDS; do
-        if [ "$selected_backend" = "$supported_backend" ]; then
-            check_backend_configuration $selected_backend
-            echo $selected_backend
-            return
-        fi
-    done
+#### Backend
+function get_sql_alchemy_conn {
+    local __resultvar=$1
+    local selected_backend=${2:-sqlite}
+    if is_a_supported_backend "$selected_backend"; then
+        get_sql_alchemy_conn_$selected_backend "sql_alchemy_conn"
+        eval $__resultvar="'$sql_alchemy_conn'"
+        return
+    fi
     throw "Backend ${selected_backend} is not supported"
 }
 
+function is_a_supported_backend {
+    local selected_backend=${1:-sqlite}
+    local supported_backends="sqlite mysql postgres"
+    for supported_backend in $supported_backends; do
+        if [ "$selected_backend" = "$supported_backend" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+function get_sql_alchemy_conn_mysql {
+    local __resultvar=$1
+    file_env 'BACKEND_USER'
+    file_env 'BACKEND_PASSWORD'
+    file_env 'BACKEND_HOST'
+    file_env 'BACKEND_PORT'
+    file_env 'BACKEND_DATABASE'
+    if [ -z "${BACKEND_USER}" -o -z "${BACKEND_PASSWORD}" -o -z "${BACKEND_HOST}" -o -z "${BACKEND_PORT}" -o -z "${BACKEND_DATABASE}" ]; then
+        throw "Incomplete MySQL configuration. Variables BACKEND_USER, BACKEND_PASSWORD, BACKEND_HOST, BACKEND_PORT, BACKEND_DATABASE are needed."
+    fi
+    wait_for_port "${backend}" "${BACKEND_HOST}" "${BACKEND_PORT}"
+    eval $__resultvar="'mysql+mysqldb://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}/${BACKEND_DATABASE}'"
+}
+
+function get_sql_alchemy_conn_postgres {
+    local __resultvar=$1
+    file_env 'BACKEND_USER'
+    file_env 'BACKEND_PASSWORD'
+    file_env 'BACKEND_HOST'
+    file_env 'BACKEND_PORT'
+    file_env 'BACKEND_DATABASE'
+    if [ -z "${BACKEND_USER}" -o -z "${BACKEND_PASSWORD}" -o -z "${BACKEND_HOST}" -o -z "${BACKEND_PORT}" -o -z "${BACKEND_DATABASE}" ]; then
+        throw "Incomplete Postgres configuration. Variables BACKEND_USER, BACKEND_PASSWORD, BACKEND_HOST, BACKEND_PORT, BACKEND_DATABASE are needed."
+    fi
+    wait_for_port "${backend}" "${BACKEND_HOST}" "${BACKEND_PORT}"
+    eval $__resultvar="'postgresql+psycopg2://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}:${BACKEND_PORT}/${BACKEND_DATABASE}'"
+}
+
+function get_sql_alchemy_conn_sqlite {
+    local __resultvar=$1
+    INITDB=${INITDB:-True}
+    RUN_AIRFLOW_SCHEDULER=${RUN_AIRFLOW_SCHEDULER:-True}
+    eval $__resultvar="'sqlite:////${AIRFLOW_HOME}/airflow.db'"
+}
+
+#### Executor
 function get_executor {
     local selected_executor=${EXECUTOR:-SequentialExecutor}
     for supported_executor in $SUPPORTED_EXECUTORS; do
@@ -69,6 +113,7 @@ function get_executor {
     throw "Executor ${selected_executor} is not supported"
 }
 
+#### Celery
 function get_celery_broker {
     local selected_broker=${BROKER:-rabbitmq}
     for supported_broker in $SUPPORTED_CELERY_BROKERS; do
@@ -79,20 +124,6 @@ function get_celery_broker {
         fi
     done
     throw "Celery broker ${selected_broker} is not supported"
-}
-
-function check_backend_configuration {
-    local backend=$1
-    if [ $backend != "sqlite" ]; then
-        file_env 'BACKEND_USER'
-        file_env 'BACKEND_PASSWORD'
-        file_env 'BACKEND_HOST'
-        file_env 'BACKEND_PORT'
-        file_env 'BACKEND_DATABASE'
-        if [ -z "${BACKEND_USER}" -o -z "${BACKEND_PASSWORD}" -o -z "${BACKEND_HOST}" -o -z "${BACKEND_PORT}" -o -z "${BACKEND_DATABASE}" ]; then
-            throw "Incomplete ${backend} configuration. Variables BACKEND_USER, BACKEND_PASSWORD, BACKEND_HOST, BACKEND_PORT, BACKEND_DATABASE are needed."
-        fi
-    fi
 }
 
 function check_celery_broker_configuration {
@@ -112,16 +143,6 @@ function check_celery_broker_configuration {
     fi
 }
 
-function get_sql_alchemy_conn {
-    if [ "$BACKEND" = "mysql" ]; then
-        echo mysql+mysqldb://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}/${BACKEND_DATABASE}
-    elif [ "$BACKEND" = "postgres" ]; then
-        echo postgresql+psycopg2://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}:${BACKEND_PORT}/${BACKEND_DATABASE}
-    elif [ "$BACKEND" = "sqlite" ]; then
-        echo sqlite:////${AIRFLOW_HOME}/airflow.db
-    fi
-}
-
 function get_celery_broker_url {
     if [ "$CELERY_BROKER" = "rabbitmq" ]; then
         echo amqp://${CELERY_BROKER_USER}:${CELERY_BROKER_PASSWORD}@${CELERY_BROKER_HOST}:${CELERY_BROKER_PORT}/airflow
@@ -138,25 +159,19 @@ function get_celery_result_backend {
     fi
 }
 
-INITDB=${INITDB:-False}
-RUN_AIRFLOW_SCHEDULER=False
-SUPPORTED_BACKENDS="sqlite mysql postgres"
+#### Main
+if [ "$DEBUG" = "True" ]; then
+    set -x
+fi
+
 SUPPORTED_EXECUTORS="SequentialExecutor LocalExecutor CeleryExecutor"
 SUPPORTED_CELERY_BROKERS="redis rabbitmq"
-BACKEND=$(get_backend)
 
 AIRFLOW__CORE__LOAD_EXAMPLES=${LOAD_EXAMPLES:-False}
 AIRFLOW__CORE__AIRFLOW_HOME=${AIRFLOW_HOME}
 AIRFLOW__CORE__FERNET_KEY=${FERNET_KEY:=$(python -c "from cryptography.fernet import Fernet; FERNET_KEY = Fernet.generate_key().decode(); print(FERNET_KEY)")}
-AIRFLOW__CORE__SQL_ALCHEMY_CONN=$(get_sql_alchemy_conn)
+get_sql_alchemy_conn "AIRFLOW__CORE__SQL_ALCHEMY_CONN" "$BACKEND"
 AIRFLOW__CORE__EXECUTOR=$(get_executor)
-
-if [ "$BACKEND" != "sqlite" ]; then
-    wait_for_port "${BACKEND}" "${BACKEND_HOST}" "${BACKEND_PORT}"
-else
-    INITDB=True
-    RUN_AIRFLOW_SCHEDULER=True
-fi
 
 if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
     CELERY_BROKER=$(get_celery_broker)
