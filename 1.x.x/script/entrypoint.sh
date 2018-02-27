@@ -125,6 +125,7 @@ function get_celery_broker_url {
         return
     fi
     throw "Celery broker ${selected_celery_broker} is not supported"
+}
 
 function is_a_supported_celery_broker {
     local selected_celery_broker=${1}
@@ -163,11 +164,59 @@ function get_celery_broker_url_rabbitmq {
 }
 
 function get_celery_result_backend {
+    local __resultvar=$1
+    local selected_backend=${2}
+    if is_a_supported_celery_result_backend "$selected_backend"; then
+        get_celery_result_backend_$selected_backend "celery_result_backend"
+        eval $__resultvar="'$celery_result_backend'"
+        return
+    fi
+    throw "Celery result backend ${selected_backend} is not supported"
+
     if [ "$BACKEND" = "mysql" ]; then
         echo db+mysql://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}/${BACKEND_DATABASE}
     elif [ "$BACKEND" = "postgres" ]; then
         echo db+postgresql://${BACKEND_USER}:${BACKEND_PASSWORD}@${BACKEND_HOST}:${BACKEND_PORT}/${BACKEND_DATABASE}
     fi
+}
+
+function is_a_supported_celery_result_backend {
+    local selected_backend=${1}
+    local supported_backends="mysql postgres"
+    for supported_backend in $supported_backends; do
+        if [ "$selected_backend" = "$supported_backend" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+function get_celery_result_backend_mysql {
+    local __resultvar=$1
+    file_env 'CELERY_BACKEND_USER'
+    file_env 'CELERY_BACKEND_PASSWORD'
+    file_env 'CELERY_BACKEND_HOST'
+    file_env 'CELERY_BACKEND_PORT'
+    file_env 'CELERY_BACKEND_DATABASE'
+    if [ -z "${CELERY_BACKEND_USER}" -o -z "${CELERY_BACKEND_PASSWORD}" -o -z "${CELERY_BACKEND_HOST}" -o -z "${CELERY_BACKEND_PORT}" -o -z "${CELERY_BACKEND_DATABASE}" ]; then
+        throw "Incomplete MySQL configuration. Variables CELERY_BACKEND_USER, CELERY_BACKEND_PASSWORD, CELERY_BACKEND_HOST, CELERY_BACKEND_PORT, CELERY_BACKEND_DATABASE are needed."
+    fi
+    wait_for_port "MySQL" "${CELERY_BACKEND_HOST}" "${CELERY_BACKEND_PORT}"
+    eval $__resultvar="'db+mysql://${CELERY_BACKEND_USER}:${CELERY_BACKEND_PASSWORD}@${CELERY_BACKEND_HOST}/${CELERY_BACKEND_DATABASE}'"
+}
+
+function get_celery_result_backend_postgres {
+    local __resultvar=$1
+    file_env 'CELERY_BACKEND_USER'
+    file_env 'CELERY_BACKEND_PASSWORD'
+    file_env 'CELERY_BACKEND_HOST'
+    file_env 'CELERY_BACKEND_PORT'
+    file_env 'CELERY_BACKEND_DATABASE'
+    if [ -z "${CELERY_BACKEND_USER}" -o -z "${CELERY_BACKEND_PASSWORD}" -o -z "${CELERY_BACKEND_HOST}" -o -z "${CELERY_BACKEND_PORT}" -o -z "${CELERY_BACKEND_DATABASE}" ]; then
+        throw "Incomplete Postgres configuration. Variables CELERY_BACKEND_USER, CELERY_BACKEND_PASSWORD, CELERY_BACKEND_HOST, CELERY_BACKEND_PORT, CELERY_BACKEND_DATABASE are needed."
+    fi
+    wait_for_port "Postgres" "${CELERY_BACKEND_HOST}" "${CELERY_BACKEND_PORT}"
+    eval $__resultvar="'db+postgresql://${CELERY_BACKEND_USER}:${CELERY_BACKEND_PASSWORD}@${CELERY_BACKEND_HOST}:${CELERY_BACKEND_PORT}/${CELERY_BACKEND_DATABASE}'"
 }
 
 #### Main
@@ -183,7 +232,7 @@ get_executor "AIRFLOW__CORE__EXECUTOR" "$EXECUTOR"
 
 if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
     get_celery_broker_url "AIRFLOW__CELERY__BROKER_URL" "$BROKER"
-    AIRFLOW__CELERY__CELERY_RESULT_BACKEND=$(get_celery_result_backend)
+    get_celery_result_backend "AIRFLOW__CELERY__CELERY_RESULT_BACKEND" "${CELERY_BACKEND:-$BACKEND}"
     wait_for_port "${CELERY_BROKER}" "${CELERY_BROKER_HOST}" "${CELERY_BROKER_PORT}"
 fi
 
