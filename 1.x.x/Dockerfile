@@ -14,7 +14,7 @@ RUN buildDeps=" \
         netcat \
     " && \
     apt-get update && apt-get install -y --no-install-recommends $buildDeps $runtimeDeps && \
-    pip install apache-airflow[crypto,mysql,postgres,oracle,celery,redis]==$AIRFLOW_VERSION && \
+    pip install apache-airflow[crypto,mysql,postgres,oracle,celery,redis,dask]==$AIRFLOW_VERSION && \
     apt-get purge -y --auto-remove $buildDeps && \
 	rm -rf /var/lib/apt/lists/* && \
     useradd -ms /bin/bash -d ${AIRFLOW_HOME} airflow && \

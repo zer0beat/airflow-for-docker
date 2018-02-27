@@ -105,7 +105,7 @@ function get_sql_alchemy_conn_sqlite {
 function get_executor {
     local __resultvar=$1
     local selected_executor=${2:-SequentialExecutor}
-    local supported_executors="SequentialExecutor LocalExecutor CeleryExecutor"
+    local supported_executors="SequentialExecutor LocalExecutor CeleryExecutor DaskExecutor"
     for supported_executor in $supported_executors; do
         if [ "$selected_executor" = "$supported_executor" ]; then
             eval $__resultvar="'$selected_executor'"
@@ -223,6 +223,18 @@ function get_celery_result_backend_postgres {
     eval $__resultvar="'db+postgresql://${CELERY_BACKEND_USER}:${CELERY_BACKEND_PASSWORD}@${CELERY_BACKEND_HOST}:${CELERY_BACKEND_PORT}/${CELERY_BACKEND_DATABASE}'"
 }
 
+# Dask
+function get_dask_cluster_address {
+    local __resultvar=$1
+    file_env 'DASK_HOST'
+    file_env 'DASK_PORT'
+    if [ -z "${DASK_HOST}" -o -z "${DASK_PORT}" ]; then
+        throw "Incomplete Dask configuration. Variables DASK_HOST, DASK_PORT are needed."
+    fi
+    wait_for_port "Dask" "${DASK_HOST}" "${DASK_PORT}"
+    eval $__resultvar="'${DASK_HOST}:${DASK_PORT}'"
+}
+
 #### Main
 if [ "$DEBUG" = "True" ]; then
     set -x
@@ -237,6 +249,8 @@ get_executor "AIRFLOW__CORE__EXECUTOR" "$EXECUTOR"
 if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
     get_celery_broker_url "AIRFLOW__CELERY__BROKER_URL" "$BROKER"
     get_celery_result_backend "AIRFLOW__CELERY__CELERY_RESULT_BACKEND" "${CELERY_BACKEND:-$BACKEND}"
+elif [ "$AIRFLOW__CORE__EXECUTOR" = "DaskExecutor" ]; then
+    get_dask_cluster_address "AIRFLOW__DASK__CLUSTER_ADDRESS"
 fi
 
 export_airflow_variables

@@ -1,0 +1,100 @@
+version: '3.5'
+services:
+    airflow-scheduler:
+        image: z0beat/airflow:1.9.0
+        depends_on: 
+            - mysql
+        networks:
+            - airflow
+        volumes:
+            - ${AIRFLOW_DAGS}:/opt/airflow/dags
+        environment:
+            EXECUTOR: DaskExecutor
+            BACKEND: mysql
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
+            DASK_HOST: dask-scheduler
+            DASK_PORT: 8786
+            INITDB: "True"
+            FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
+        command: airflow scheduler
+    airflow-webserver:
+        image: z0beat/airflow:1.9.0
+        depends_on: 
+            - mysql
+        ports:
+            - 8180:8080
+        networks:
+            - airflow
+        volumes:
+            - ${AIRFLOW_DAGS}:/opt/airflow/dags
+        environment:
+            EXECUTOR: DaskExecutor
+            BACKEND: mysql
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
+            DASK_HOST: dask-scheduler
+            DASK_PORT: 8786
+            FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
+        command: airflow webserver
+        healthcheck:
+            test: ["CMD-SHELL", "[ -f /opt/airflow/airflow-webserver.pid ]"]
+            interval: 30s
+            timeout: 30s
+            retries: 3
+    dask-scheduler:
+        image: z0beat/airflow:1.9.0
+        networks:
+            - airflow
+        volumes:
+            - ${AIRFLOW_DAGS}:/opt/airflow/dags
+        environment:
+            EXECUTOR: LocalExecutor
+            BACKEND: mysql
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
+            FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
+        ports:
+            - 8786:8786
+            - 8787:8787
+        command: dask-scheduler
+    dask-worker:
+        image: z0beat/airflow:1.9.0
+        networks:
+            - airflow
+        volumes:
+            - ${AIRFLOW_DAGS}:/opt/airflow/dags
+        environment:
+            EXECUTOR: LocalExecutor
+            BACKEND: mysql
+            BACKEND_USER: airflow
+            BACKEND_PASSWORD: yey123456
+            BACKEND_DATABASE: airflow
+            BACKEND_HOST: mysql
+            BACKEND_PORT: 3306
+            FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
+        command: dask-worker dask-scheduler:8786
+    mysql:
+        image: mysql:5.7
+        ports:
+            - 3306:3306
+        networks: 
+            - airflow
+        volumes:
+            - ${MYSQL_DATA}:/var/lib/mysql
+        environment:
+            MYSQL_USER: airflow
+            MYSQL_PASSWORD: yey123456
+            MYSQL_DATABASE: airflow
+            MYSQL_ROOT_PASSWORD: iamroot321654
+networks:
+    airflow:
