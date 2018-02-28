@@ -249,7 +249,7 @@ get_executor "AIRFLOW__CORE__EXECUTOR" "$EXECUTOR"
 if [ "$AIRFLOW__CORE__EXECUTOR" = "CeleryExecutor" ]; then
     get_celery_broker_url "AIRFLOW__CELERY__BROKER_URL" "$BROKER"
     get_celery_result_backend "AIRFLOW__CELERY__CELERY_RESULT_BACKEND" "${CELERY_BACKEND:-$BACKEND}"
-elif [ "$AIRFLOW__CORE__EXECUTOR" = "DaskExecutor" ]; then
+elif [ "$AIRFLOW__CORE__EXECUTOR" = "DaskExecutor" ] && [ "$1" != "dask-scheduler" ]; then
     get_dask_cluster_address "AIRFLOW__DASK__CLUSTER_ADDRESS"
 fi
 

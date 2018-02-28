@@ -55,7 +55,7 @@ services:
         volumes:
             - ${AIRFLOW_DAGS}:/opt/airflow/dags
         environment:
-            EXECUTOR: LocalExecutor
+            EXECUTOR: DaskExecutor
             BACKEND: mysql
             BACKEND_USER: airflow
             BACKEND_PASSWORD: yey123456
@@ -74,13 +74,15 @@ services:
         volumes:
             - ${AIRFLOW_DAGS}:/opt/airflow/dags
         environment:
-            EXECUTOR: LocalExecutor
+            EXECUTOR: DaskExecutor
             BACKEND: mysql
             BACKEND_USER: airflow
             BACKEND_PASSWORD: yey123456
             BACKEND_DATABASE: airflow
             BACKEND_HOST: mysql
             BACKEND_PORT: 3306
+            DASK_HOST: dask-scheduler
+            DASK_PORT: 8786
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         command: dask-worker dask-scheduler:8786
     mysql:
