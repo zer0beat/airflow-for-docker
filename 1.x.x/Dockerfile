@@ -3,6 +3,7 @@ FROM python:3.6-slim-stretch
 ARG VERSION
 
 ENV AIRFLOW_HOME        /opt/airflow
+ENV AIRFLOW_CONF        /opt/airflow.d
 ENV AIRFLOW_VERSION     ${VERSION}
 
 RUN buildDeps=" \
@@ -21,9 +22,14 @@ RUN buildDeps=" \
     chown -R airflow:airflow ${AIRFLOW_HOME}
 
 COPY script/entrypoint.sh /entrypoint.sh
-RUN chmod +x /entrypoint.sh
+COPY ./airflow.d ${AIRFLOW_CONF}
+RUN chmod +x /entrypoint.sh && \
+    chown -R airflow:airflow ${AIRFLOW_CONF}
 
-EXPOSE 8080 8793 5555
+# 8080 -> Airflow UI
+# 5555 -> Flower (Celery UI)
+# 8787 -> Dask UI
+EXPOSE 8080 5555 8787
 
 USER airflow
 WORKDIR ${AIRFLOW_HOME}
