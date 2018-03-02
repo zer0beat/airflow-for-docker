@@ -4,6 +4,7 @@ ARG VERSION
 
 ENV AIRFLOW_HOME        /opt/airflow
 ENV AIRFLOW_CONF        /opt/airflow.d
+ENV AIRFLOW_AUTOCONF    True
 ENV AIRFLOW_VERSION     ${VERSION}
 
 RUN buildDeps=" \
