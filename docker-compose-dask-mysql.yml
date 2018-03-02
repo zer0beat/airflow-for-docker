@@ -64,7 +64,6 @@ services:
             BACKEND_PORT: 3306
             FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
         ports:
-            - 8786:8786
             - 8787:8787
         command: dask-scheduler
     dask-worker:
