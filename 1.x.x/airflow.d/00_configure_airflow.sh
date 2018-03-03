@@ -96,8 +96,8 @@ function get_sql_alchemy_conn_postgres {
 
 function get_sql_alchemy_conn_sqlite {
     local __resultvar=$1
-    INITDB=${INITDB:-True}
-    RUN_AIRFLOW_SCHEDULER=${RUN_AIRFLOW_SCHEDULER:-True}
+    #INITDB=${INITDB:-True}
+    #RUN_AIRFLOW_SCHEDULER=${RUN_AIRFLOW_SCHEDULER:-True}
     eval $__resultvar="'sqlite:////${AIRFLOW_HOME}/airflow.db'"
 }
 
@@ -249,13 +249,3 @@ elif [ "$AIRFLOW__CORE__EXECUTOR" = "DaskExecutor" ] && [ "$1" != "dask-schedule
 fi
 
 export_airflow_variables
-
-if [ "$INITDB" = "True" ]; then
-    airflow initdb
-else
-    sleep 15
-fi
-
-if [ "$RUN_AIRFLOW_SCHEDULER" = "True" ]; then
-    airflow scheduler &
-fi

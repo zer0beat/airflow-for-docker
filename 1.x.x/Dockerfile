@@ -36,4 +36,4 @@ USER airflow
 WORKDIR ${AIRFLOW_HOME}
 
 ENTRYPOINT ["/entrypoint.sh"]
-CMD ["airflow","webserver"]
+CMD ["airflow","version"]
