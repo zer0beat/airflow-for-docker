@@ -17,7 +17,7 @@ before_script:
 
 script:
   - docker build --build-arg VERSION=${VERSION} -t "$image" .
-  - ./test/run-tests.sh "$image"
+  - ../test/run-tests.sh "$image"
   - docker push "$image"
   - |
     if [ "$LATEST" == "true" ]; then
