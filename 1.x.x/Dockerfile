@@ -9,11 +9,11 @@ ENV AIRFLOW_VERSION     ${VERSION}
 
 RUN buildDeps=" \
         build-essential \
-        wget \
     " && \
     runtimeDeps=" \
         libmariadbclient-dev \
         netcat \
+        wget \
     " && \
     apt-get update && apt-get install -y --no-install-recommends $buildDeps $runtimeDeps && \
     pip install apache-airflow[crypto,mysql,postgres,oracle,celery,redis,dask]==$AIRFLOW_VERSION bokeh && \
