@@ -16,14 +16,16 @@ before_script:
   - latest="${DOCKERHUB_USERNAME}/airflow:latest"
 
 script:
-  - docker build --build-arg VERSION=${VERSION} -t "$image" .
-  - ../test/run-tests.sh "$image"
-  - docker push "$image"
   - |
-    if [ "$LATEST" == "true" ]; then
-      docker tag "$image" "$latest"
-      docker push "$latest" 
-    fi
+    (
+      docker build --build-arg VERSION=${VERSION} -t "$image" .
+      ../test/run-tests.sh "$image"
+      docker push "$image"
+      if [ "$LATEST" == "true" ]; then
+        docker tag "$image" "$latest"
+        docker push "$latest" 
+      fi
+    )
 
 
 after_script:
