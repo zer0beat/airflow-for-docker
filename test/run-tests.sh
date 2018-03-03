@@ -33,4 +33,7 @@ else
     popd &> /dev/null
 fi
 
-$official_images_dir/test/run.sh "$image"
+$official_images_dir/test/run.sh \
+    --config $official_images_dir/test/config.sh \
+    --config $dir/airflow_config.sh \
+    "$image"

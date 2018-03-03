@@ -18,6 +18,8 @@ before_script:
 script:
   - |
     (
+      # https://vaneyckt.io/posts/safer_bash_scripts_with_set_euxo_pipefail/
+      set -euxo pipefail
       docker build --build-arg VERSION=${VERSION} -t "$image" .
       ../test/run-tests.sh "$image"
       docker push "$image"
