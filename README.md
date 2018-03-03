@@ -1,5 +1,6 @@
 # Apache Airflow for Docker
 ## Version 1.9.0
+[![Build Status](https://travis-ci.org/zer0beat/airflow-for-docker.svg?branch=master)](https://travis-ci.org/zer0beat/airflow-for-docker)
 
 ## Sample Usage:
 
@@ -15,7 +16,7 @@ From your checkout directory:
 2. Run the image
 
         VERSION=1.9.0
-        docker run --rm -p 18080:18080 airflow:${VERSION}
+        docker run --rm airflow:${VERSION}
 
 ## Useful links
 
