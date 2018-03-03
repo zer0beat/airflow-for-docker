@@ -10,13 +10,14 @@ env:
 
 before_script:
   - env | sort
+  - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
   - cd ${FOLDER}
   - image="${DOCKERHUB_USERNAME}/airflow:${VERSION}"
   - latest="${DOCKERHUB_USERNAME}/airflow:latest"
 
 script:
   - docker build --build-arg VERSION=${VERSION} -t "$image" .
-  - docker login -u $DOCKERHUB_USERNAME -p $DOCKERHUB_PASSWORD
+  - ./test/run-tests.sh "$image"
   - docker push "$image"
   - |
     if [ "$LATEST" == "true" ]; then

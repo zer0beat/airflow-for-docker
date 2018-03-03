@@ -56,3 +56,4 @@ local.properties
 mysql-data/
 postgres-data/
 airflow-dags/
+official-images/

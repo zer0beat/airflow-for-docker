@@ -1,0 +1,18 @@
+version: '3.5'
+services:
+    airflow:
+        image: z0beat/airflow:1.9.0
+        ports:
+            - 8180:8080
+        networks:
+            - airflow
+        volumes:
+            - ${AIRFLOW_DAGS}:/opt/airflow/dags
+        environment:
+            BACKEND: sqlite
+            EXECUTOR: SequentialExecutor
+            SINGLE_NODE: "True"
+            FERNET_KEY: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
+        command: airflow webserver
+networks:
+    airflow:
