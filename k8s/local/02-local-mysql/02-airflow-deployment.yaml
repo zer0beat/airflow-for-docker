@@ -1,0 +1,86 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name:  airflow
+spec:
+  selector:
+    app: airflow
+    svc: webserver
+  type: NodePort
+  ports:
+  - name:  webserver
+    port:  8080
+    targetPort:  webserver
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: airflow
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: airflow
+        svc: webserver
+        version: 1.9.0
+    spec:
+      volumes:
+        - name: airflow-dags
+          hostPath:
+            path: /projects/airflow-for-docker/airflow-dags
+            type: Directory
+      containers:
+        - name: webserver
+          image: z0beat/airflow:1.9.0
+          args: ["airflow", "webserver"]
+          ports:
+            - name: webserver
+              containerPort: 8080
+          volumeMounts:
+            - name: airflow-dags
+              mountPath: /opt/airflow/dags
+              readOnly: true
+          env:
+            - name: BACKEND
+              value: mysql
+            - name: EXECUTOR
+              value: LocalExecutor
+            - name: BACKEND_USER
+              value: airflow
+            - name: BACKEND_PASSWORD
+              value: yey123456
+            - name: BACKEND_DATABASE
+              value: airflow
+            - name: BACKEND_HOST
+              value: mysql
+            - name: BACKEND_PORT
+              value: "3306"
+            - name: FERNET_KEY
+              value: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
+        - name: scheduler
+          image: z0beat/airflow:1.9.0
+          args: ["airflow", "scheduler"]
+          volumeMounts:
+            - name: airflow-dags
+              mountPath: /opt/airflow/dags
+              readOnly: true
+          env:
+            - name: BACKEND
+              value: mysql
+            - name: EXECUTOR
+              value: LocalExecutor
+            - name: BACKEND_USER
+              value: airflow
+            - name: BACKEND_PASSWORD
+              value: yey123456
+            - name: BACKEND_DATABASE
+              value: airflow
+            - name: BACKEND_HOST
+              value: mysql
+            - name: BACKEND_PORT
+              value: "3306"
+            - name: INITDB
+              value: "True"
+            - name: FERNET_KEY
+              value: NXtEyKwp633TUtAgdyoEonj9ufHRI7I33s3wjw3q0yU=
