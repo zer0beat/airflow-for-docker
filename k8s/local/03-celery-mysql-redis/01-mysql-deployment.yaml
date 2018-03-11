@@ -1,0 +1,47 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name:  mysql
+spec:
+  selector:
+    app: mysql
+    svc: db
+  type: NodePort
+  ports:
+  - name:  mysql-port
+    port:  3306
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: mysql
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+        svc: db
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:5.7
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+          env:
+            - name: MYSQL_USER
+              value: airflow
+            - name: MYSQL_PASSWORD
+              value: yey123456
+            - name: MYSQL_DATABASE
+              value: airflow
+            - name: MYSQL_ROOT_PASSWORD
+              value: iamroot321654
+      volumes:
+        - name: mysql-data
+          hostPath:
+            path: /projects/airflow-for-docker/mysql-data
+            type: Directory
